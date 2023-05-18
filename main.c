@@ -127,8 +127,19 @@ int main(int argc, char *argv[])
         fseek(inptr, padding, SEEK_CUR);
     }
 
+    RGBTRIPLE* pixelArrayCopy = (RGBTRIPLE*)calloc(height * width, sizeof(RGBTRIPLE));
+
+    if(pixelArrayCopy == NULL) {
+        // Handle the error.
+        fprintf(stderr, "Memory allocation for pixelArrayCopy failed\n");
+        exit(1);
+    }
+
+    memcpy(pixelArrayCopy, pixelArray, height * width * sizeof(RGBTRIPLE));
+
     double swirlFactor;
     initDefaultSwirlFactor(&swirlFactor);
+
 
     displayResult(pixelArray, width, height);
 
