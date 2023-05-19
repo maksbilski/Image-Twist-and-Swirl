@@ -140,8 +140,9 @@ int main(int argc, char *argv[])
     double swirlFactor;
     initDefaultSwirlFactor(&swirlFactor);
 
+    performSwirl(pixelArray, pixelArrayCopy, width, height, swirlFactor);
 
-    displayResult(pixelArray, width, height);
+    displayResult(pixelArrayCopy, width, height);
 
     return 0;
 }
