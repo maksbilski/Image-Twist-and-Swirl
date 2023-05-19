@@ -130,13 +130,8 @@ rel_x_is_grt_than_zero:
         mulsd       xmm6, qword[double_two]
         subsd       xmm6, xmm1
         jmp         original_angle_computed
-        cvttsd2si   r12, xmm2
-        cvttsd2si   r13, xmm3
 
-        add         r10, r12
-        add         r11, r13
-        mov         r12, r11
-        mov         r11, rcx
+rel_y_is_less_than_zero:
         addsd       xmm6, qword [double_pi]
 
 original_angle_computed:
