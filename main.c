@@ -2,81 +2,47 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <allegro5/allegro_image.h>
+#include <allegro5/allegro.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
 #include "swirl.h"
-#include <SDL2/SDL.h>
-#include <stdbool.h>
 
-void displayResult(RGBTRIPLE* pixelArray, int width, int height) {
-    // Create a window
-    SDL_Window* window = SDL_CreateWindow("Display Result", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN);
-    if (window == NULL) {
-        printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
-        SDL_Quit();
+#define INPUT_BUFFER_SIZE 256
+
+void displayResult(ALLEGRO_DISPLAY* display, RGBTRIPLE* pixelArray, int width, int height) {
+
+    ALLEGRO_BITMAP* bitmap = al_create_bitmap(width, height);
+    if(!bitmap) {
+        fprintf(stderr, "failed to create bitmap!\n");
         return;
     }
 
-    // Create a renderer
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (renderer == NULL) {
-        printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return;
-    }
+    al_set_target_bitmap(bitmap);
 
-    // Create a texture
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_BGR24, SDL_TEXTUREACCESS_STATIC, width, height);
-    if (texture == NULL) {
-        printf("Texture could not be created! SDL_Error: %s\n", SDL_GetError());
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return;
-    }
-
-    // Create a buffer for flipped rows
-    RGBTRIPLE* flippedBuffer = (RGBTRIPLE*)calloc(height * width, sizeof(RGBTRIPLE));
     for (int i = 0; i < height; i++) {
-        memcpy(&flippedBuffer[i * width], &pixelArray[(height - i - 1) * width], width * sizeof(RGBTRIPLE));
-    }
-
-    // Update the texture with pixel data
-    SDL_UpdateTexture(texture, NULL, flippedBuffer, width * sizeof(RGBTRIPLE));
-
-    // Clear the renderer
-    SDL_RenderClear(renderer);
-
-    // Copy the texture to the renderer
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
-
-    // Display the contents of the renderer
-    SDL_RenderPresent(renderer);
-
-    // Wait for the window to be closed
-    SDL_Event e;
-    bool quit = false;
-    while (!quit) {
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) {
-                quit = true;
-            }
+        for (int j = 0; j < width; j++) {
+            RGBTRIPLE pixel = pixelArray[i * width + j];
+            al_put_pixel(j, i, al_map_rgb(pixel.rgbtRed, pixel.rgbtGreen, pixel.rgbtBlue));
         }
     }
 
-    // Cleanup
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    free(flippedBuffer);
-    SDL_Quit();
+    al_set_target_bitmap(al_get_backbuffer(display));
+    al_draw_bitmap(bitmap, 0, 0, 0);
+    al_flip_display();
+
+    //Clean up
+    al_destroy_bitmap(bitmap);
 }
+
 
 
 void initDefaultSwirlFactor(double* swirlFactor)
 {
-    *swirlFactor = 0.05;
+    *swirlFactor = -0.005;
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -88,12 +54,11 @@ int main(int argc, char *argv[])
 
     char* inputFile = argv[1];
 
-    // Open input file
     FILE *inptr = fopen(inputFile, "r");
     if (inptr == NULL)
     {
         printf("Could not open %s.\n", inputFile);
-        return 4;
+        return 2;
     }
 
     // Read infile's BITMAPFILEHEADER
@@ -104,12 +69,15 @@ int main(int argc, char *argv[])
     BITMAPINFOHEADER bitmapInfoheader;
     fread(&bitmapInfoheader, sizeof(BITMAPINFOHEADER), 1, inptr);
 
-
     // Get image's dimensions
     int height = abs(bitmapInfoheader.biHeight);
     int width = bitmapInfoheader.biWidth;
+    int offset = bitmapFileheader.bfOffBits;
 
     RGBTRIPLE* pixelArray = (RGBTRIPLE*)calloc(height * width, sizeof(RGBTRIPLE));
+
+    fseek(inptr, 0, SEEK_SET);
+    fseek(inptr, offset, SEEK_CUR);
 
     // Determine padding for scanlines
     int padding = (4 - (width * sizeof(RGBTRIPLE)) % 4) % 4;
@@ -135,14 +103,77 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    memcpy(pixelArrayCopy, pixelArray, height * width * sizeof(RGBTRIPLE));
-
     double swirlFactor;
     initDefaultSwirlFactor(&swirlFactor);
 
-    performSwirl(pixelArray, pixelArrayCopy, width, height, swirlFactor);
+    al_init();
+    al_init_image_addon();
+    al_install_mouse();
+    al_install_keyboard();
+    al_init_font_addon();
 
-    displayResult(pixelArrayCopy, width, height);
+    ALLEGRO_DISPLAY *display = al_create_display(800, 600); // Create display with desired dimensions
+    if(!display) {
+        fprintf(stderr, "failed to create display!\n");
+        return -1;
+    }
+
+    ALLEGRO_FONT* font = al_create_builtin_font();
+    ALLEGRO_BITMAP *membitmap;
+    ALLEGRO_TIMER *timer;
+    ALLEGRO_EVENT_QUEUE *queue;
+
+    bool redraw = true;
+    timer = al_create_timer(1.0 / 30);
+    queue = al_create_event_queue();
+    al_register_event_source(queue, al_get_keyboard_event_source());
+    al_register_event_source(queue, al_get_display_event_source(display));
+    al_register_event_source(queue, al_get_timer_event_source(timer));
+    al_register_event_source(queue , al_get_mouse_event_source());
+    al_start_timer(timer);
+    al_register_event_source(queue, al_get_display_event_source(display)); // Now display is initialized
+
+
+    while (1) {
+        ALLEGRO_EVENT event;
+        al_wait_for_event(queue, &event);
+        if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
+            break;
+        if(event.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
+        {
+            performSwirl(pixelArray, pixelArrayCopy, width, height, swirlFactor);
+        }
+        if (event.type == ALLEGRO_EVENT_KEY_CHAR)
+        {
+            if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
+                break;
+            if (event.keyboard.unichar == 'w')
+                swirlFactor += 0.005;
+            if (event.keyboard.unichar == 's')
+                swirlFactor -= 0.005;
+        }
+        if (event.type == ALLEGRO_EVENT_TIMER)
+            redraw = true;
+        if (redraw && al_is_event_queue_empty(queue))
+        {
+            redraw = false;
+            al_clear_to_color(al_map_rgb_f(0, 0, 0));
+            displayResult(display, pixelArrayCopy, width, height); // Pass display to the function
+            char formattedString[100];
+            al_draw_text(font, al_map_rgb(255, 255, 255), 0, 5, 0, "Change swirlFactor with <w, s>");
+            sprintf(formattedString, "Swirl Factor: %.3f" , swirlFactor); // Corrected format string
+            al_draw_text(font, al_map_rgb(255, 255, 255), 0, 35, 0, formattedString);
+            al_flip_display();
+        }
+    }
+
+    free(bitmapInfoheader);
+    free(pixelArray);
+    free(pixelArrayCopy);
+    al_destroy_display(display);
+    al_destroy_font(font);
+    al_destroy_event_queue(queue);
+    al_destroy_timer(timer);
 
     return 0;
 }
