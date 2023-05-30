@@ -31,7 +31,6 @@ void displayResult(ALLEGRO_DISPLAY* display, RGBTRIPLE* pixelArray, int width, i
 
     al_set_target_bitmap(al_get_backbuffer(display));
     al_draw_bitmap(bitmap, 0, 0, 0);
-    al_flip_display();
 
     //Clean up
     al_destroy_bitmap(bitmap);
@@ -95,16 +94,11 @@ int main(int argc, char *argv[])
         fseek(inptr, padding, SEEK_CUR);
     }
 
-    RGBTRIPLE* pixelArrayCopy = (RGBTRIPLE*)calloc(height * width, sizeof(RGBTRIPLE));
-
-    if(pixelArrayCopy == NULL) {
-        // Handle the error.
-        fprintf(stderr, "Memory allocation for pixelArrayCopy failed\n");
-        exit(1);
-    }
-
     double swirlFactor;
     initDefaultSwirlFactor(&swirlFactor);
+
+    RGBTRIPLE* pixelArrayCopy = (RGBTRIPLE*)calloc(height * width, sizeof(RGBTRIPLE));
+
 
     al_init();
     al_init_image_addon();
@@ -112,18 +106,16 @@ int main(int argc, char *argv[])
     al_install_keyboard();
     al_init_font_addon();
 
-    ALLEGRO_DISPLAY *display = al_create_display(800, 600); // Create display with desired dimensions
+    ALLEGRO_DISPLAY *display = al_create_display(width, height); // Create display with desired dimensions
     if(!display) {
         fprintf(stderr, "failed to create display!\n");
         return -1;
     }
 
     ALLEGRO_FONT* font = al_create_builtin_font();
-    ALLEGRO_BITMAP *membitmap;
     ALLEGRO_TIMER *timer;
     ALLEGRO_EVENT_QUEUE *queue;
 
-    bool redraw = true;
     timer = al_create_timer(1.0 / 30);
     queue = al_create_event_queue();
     al_register_event_source(queue, al_get_keyboard_event_source());
@@ -139,35 +131,33 @@ int main(int argc, char *argv[])
         al_wait_for_event(queue, &event);
         if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
             break;
-        if(event.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
-        {
-            performSwirl(pixelArray, pixelArrayCopy, width, height, swirlFactor);
-        }
+
         if (event.type == ALLEGRO_EVENT_KEY_CHAR)
         {
             if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
                 break;
-            if (event.keyboard.unichar == 'w')
-                swirlFactor += 0.005;
-            if (event.keyboard.unichar == 's')
-                swirlFactor -= 0.005;
-        }
-        if (event.type == ALLEGRO_EVENT_TIMER)
-            redraw = true;
-        if (redraw && al_is_event_queue_empty(queue))
-        {
-            redraw = false;
+            if (event.keyboard.keycode == ALLEGRO_KEY_UP)
+                swirlFactor += 0.001;
+            else if (event.keyboard.keycode == ALLEGRO_KEY_DOWN)
+                swirlFactor -= 0.001;
+            else if (event.keyboard.keycode == ALLEGRO_KEY_ENTER) {
+            // Do nothing
+            }
+
+            performSwirl(pixelArray, pixelArrayCopy, width, height, swirlFactor);
+
             al_clear_to_color(al_map_rgb_f(0, 0, 0));
-            displayResult(display, pixelArrayCopy, width, height); // Pass display to the function
+            displayResult(display, pixelArrayCopy, width, height);
             char formattedString[100];
-            al_draw_text(font, al_map_rgb(255, 255, 255), 0, 5, 0, "Change swirlFactor with <w, s>");
-            sprintf(formattedString, "Swirl Factor: %.3f" , swirlFactor); // Corrected format string
+            al_draw_text(font, al_map_rgb(255, 255, 255), 0, 5, 0, "Change swirlFactor with <Arrow Up, Arrow Down> (Increase/Decrease by 0.001)");
+            sprintf(formattedString, "Swirl Factor: %.3f" , swirlFactor);
             al_draw_text(font, al_map_rgb(255, 255, 255), 0, 35, 0, formattedString);
+            memcpy(pixelArrayCopy, pixelArray, width * height * 3);
             al_flip_display();
         }
     }
 
-    free(bitmapInfoheader);
+
     free(pixelArray);
     free(pixelArrayCopy);
     al_destroy_display(display);
