@@ -85,5 +85,8 @@ This interactive mode allows you to visualize how varying levels of the swirl ef
 
 ## Effect 
 
+### Original Image
 ![Original Jelly Image](images/jelly_original.bmp)
+
+### After performing Swirl on it
 ![SWirled Jelly Image](images/jelly_original_after_swirl.png)
