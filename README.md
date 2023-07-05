@@ -53,5 +53,37 @@ make all
 This will produce an executable named swirl.
 
 ```sh
-./swirl input.bmp output.bmp swirl_factor
+./swirl input.bmp swirl_factor
 ```
+
+## Interactive Usage of the Application
+
+Once you have successfully compiled and executed the application by providing an input image, you'll enter into an interactive mode where you can observe the swirl effect applied to the image in real-time.
+
+Here’s how you can interact with the application:
+
+Note: Ensure that the input image is in BMP format.
+
+1. Run the application with the input image:
+
+2. After executing the above command, a window displaying the input image will open. 
+
+3. To interactively change the swirl factor, use the following keys:
+- Press the `Arrow Up` key to increase the swirl factor.
+- Press the `Arrow Down` key to decrease the swirl factor.
+
+The changes in the swirl factor will be immediately visible on the image.
+
+4. As you change the swirl factor, you will see the current value displayed in the window. This allows you to understand the intensity of the effect applied to the image.
+
+5. When you are satisfied with the result, or if you wish to exit the application, press the `Escape` key.
+
+6. You can also close the application by clicking on the close button of the window.
+
+This interactive mode allows you to visualize how varying levels of the swirl effect can alter the image. It’s a useful way to understand the impact of the swirl factor on the processing of the image.
+
+
+## Effect 
+
+![Original Jelly Image](images/jelly_original.bmp)
+![SWirled Jelly Image](images/jelly_original_after_swirl.png)
