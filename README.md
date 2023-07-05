@@ -30,17 +30,15 @@ This header file defines structures and function prototypes for handling BMP ima
 
 This file contains rules for easily building the project. It uses the GCC compiler, and it is configured to link against the Allegro 5 library.
 
-## Installing Dependencies
+### Installing Dependencies
 
 This project requires the Allegro 5 library. Below are instructions for installing it on different operating systems.
 
-### Ubuntu
-
-To install Allegro 5 on Ubuntu, use the following command:
+To install Allegro 5 on Linux (in this case Ubuntu), use the following command:
 
 ```sh
 sudo apt-get install liballegro5-dev liballegro-image5-dev liballegro-font5-dev liballegro-ttf5-dev
-
+```
 
 ## Compilation and Execution
 
@@ -54,4 +52,6 @@ make all
 
 This will produce an executable named swirl.
 
+```sh
 ./swirl input.bmp output.bmp swirl_factor
+```
